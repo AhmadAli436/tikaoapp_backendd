@@ -1,0 +1,4035 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Authentication API",
+    "description": "API for user authentication, including login, password reset request, OTP verification, and password reset.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api"
+    }
+  ],
+  "paths": {
+    "/send-otp": {
+      "post": {
+        "summary": "Send OTP",
+        "description": "Sends a one-time password (OTP) to the user’s mobile number and returns user status.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mobile"
+                ],
+                "properties": {
+                  "mobile": {
+                    "type": "string",
+                    "example": "+1234567890",
+                    "description": "User’s mobile number"
+                  }
+                }
+              },
+              "example": {
+                "mobile": "+1234567890"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "OTP sent successfully"
+                    },
+                    "userStatus": {
+                      "type": "object",
+                      "properties": {
+                        "isNewUser": {
+                          "type": "boolean",
+                          "example": true
+                        },
+                        "role": {
+                          "type": "string",
+                          "example": "student",
+                          "enum": [
+                            "student",
+                            "teacher",
+                            null
+                          ]
+                        },
+                        "isApproved": {
+                          "type": "boolean",
+                          "example": false
+                        },
+                        "rejected": {
+                          "type": "boolean",
+                          "example": false
+                        },
+                        "paymentStatus": {
+                          "type": "string",
+                          "example": "pending",
+                          "enum": [
+                            "pending",
+                            "completed"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "message": "OTP sent successfully",
+                  "userStatus": {
+                    "isNewUser": true,
+                    "role": null,
+                    "isApproved": false,
+                    "rejected": false,
+                    "paymentStatus": "pending"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (invalid mobile number)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/verify-otp": {
+      "post": {
+        "summary": "Verify OTP",
+        "description": "Verifies the OTP sent to the user’s mobile and generates a JWT token, returning user details.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mobile",
+                  "otp"
+                ],
+                "properties": {
+                  "mobile": {
+                    "type": "string",
+                    "example": "+1234567890",
+                    "description": "User’s mobile number"
+                  },
+                  "otp": {
+                    "type": "string",
+                    "example": "1234",
+                    "description": "One-time password"
+                  }
+                }
+              },
+              "example": {
+                "mobile": "+1234567890",
+                "otp": "1234"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "OTP verified"
+                    },
+                    "isNewUser": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "userId": {
+                      "type": "string",
+                      "example": "507f1f77bcf86cd799439011"
+                    },
+                    "userType": {
+                      "type": "string",
+                      "example": "student_approved",
+                      "enum": [
+                        "student_approved",
+                        "student_pending",
+                        "student_rejected",
+                        "teacher_approved",
+                        "teacher_pending",
+                        "teacher_rejected",
+                        "new"
+                      ]
+                    },
+                    "userDetails": {
+                      "type": "object",
+                      "additionalProperties": true
+                    },
+                    "token": {
+                      "type": "string",
+                      "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                  }
+                },
+                "example": {
+                  "message": "OTP verified",
+                  "isNewUser": true,
+                  "userId": "507f1f77bcf86cd799439011",
+                  "userType": "new",
+                  "userDetails": {
+                    "userId": "507f1f77bcf86cd799439011",
+                    "mobile": "+1234567890",
+                    "role": "new"
+                  },
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid OTP or bad request"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/select-role": {
+      "put": {
+        "summary": "Update select role Resource",
+        "description": "Updates a resource at /select-role",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/welcome/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /welcome/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student-details": {
+      "post": {
+        "summary": "Submit Student Details",
+        "description": "Submits or updates student details for a user with the \"student\" role.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId",
+                  "title",
+                  "firstName",
+                  "lastName",
+                  "gender",
+                  "email",
+                  "pinCode",
+                  "state"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "example": "507f1f77bcf86cd799439011",
+                    "description": "MongoDB ObjectId of the user"
+                  },
+                  "title": {
+                    "type": "string",
+                    "example": "Mr",
+                    "description": "Title (e.g., Mr, Ms)"
+                  },
+                  "firstName": {
+                    "type": "string",
+                    "example": "John",
+                    "description": "Student’s first name"
+                  },
+                  "lastName": {
+                    "type": "string",
+                    "example": "Doe",
+                    "description": "Student’s last name"
+                  },
+                  "gender": {
+                    "type": "string",
+                    "example": "male",
+                    "enum": [
+                      "male",
+                      "female",
+                      "other"
+                    ],
+                    "description": "Gender"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "john.doe@example.com",
+                    "description": "Email address"
+                  },
+                  "pinCode": {
+                    "type": "string",
+                    "example": "123456",
+                    "description": "Postal code"
+                  },
+                  "state": {
+                    "type": "string",
+                    "example": "California",
+                    "description": "State name"
+                  }
+                }
+              },
+              "example": {
+                "userId": "507f1f77bcf86cd799439011",
+                "title": "Mr",
+                "firstName": "John",
+                "lastName": "Doe",
+                "gender": "male",
+                "email": "john.doe@example.com",
+                "pinCode": "123456",
+                "state": "California"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Student details submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Student details submitted"
+                    },
+                    "student": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Student details submitted",
+                  "student": {
+                    "userId": "507f1f77bcf86cd799439011",
+                    "title": "Mr",
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "gender": "male",
+                    "email": "john.doe@example.com",
+                    "pinCode": "123456",
+                    "state": "California",
+                    "mobile": "+1234567890",
+                    "avatar": null,
+                    "avatarUrl": null,
+                    "termsAccepted": false,
+                    "paymentStatus": "pending",
+                    "tutorialViewed": false,
+                    "classId": null,
+                    "className": null,
+                    "boardId": null,
+                    "boardName": null,
+                    "schoolName": null,
+                    "uid": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request (invalid user or role)"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/teacher-approval/:userId": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/user/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /user/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/classes": {
+      "get": {
+        "summary": "Retrieve Class",
+        "description": "Retrieves a Class resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subjects/:classId": {
+      "get": {
+        "summary": "Retrieve Class",
+        "description": "Retrieves a Class resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/languages": {
+      "get": {
+        "summary": "Retrieve Language",
+        "description": "Retrieves a Language resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Language"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/create": {
+      "post": {
+        "summary": "Create create Resource",
+        "description": "Creates a resource at /create",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/batches/:teacherId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/chapters/:subjectId": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/video/:chapterId": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/submit-mcq": {
+      "post": {
+        "summary": "Create MCQ",
+        "description": "Creates a MCQ resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MCQ"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/progress/:teacherId": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subject/:subjectId/chapters": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teachers": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teachers/list": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Create upload Resource",
+        "description": "Creates a resource at /upload",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/download-reports": {
+      "post": {
+        "summary": "Create download reports Resource",
+        "description": "Creates a resource at /download-reports",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/:id": {
+      "delete": {
+        "summary": "Delete :id Resource",
+        "description": "Deletes a resource at /:id",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/detailed/teacher/:teacherId": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/batches/teacher/:teacherId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/batches/student/:studentId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/assigned-teachers/:studentId": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subjects/batch/:batchId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/video/progress": {
+      "put": {
+        "summary": "Update progress Resource",
+        "description": "Updates a resource at /video/progress",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/video/progress/:userId/:videoId": {
+      "get": {
+        "summary": "Retrieve :videoId Resource",
+        "description": "Retrieves a resource at /video/progress/:userId/:videoId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/report/long-format/batch/:userId/:batchId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student-report/long-format/batch/:userId/:batchId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/assigned-students/:teacherId": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/batch/:batchId/student-count": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/progress": {
+      "put": {
+        "summary": "Update progress Resource",
+        "description": "Updates a resource at /progress",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getprogress/:userId/:videoId": {
+      "get": {
+        "summary": "Retrieve :videoId Resource",
+        "description": "Retrieves a resource at /getprogress/:userId/:videoId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/video/report/user/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /video/report/user/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher-mocktest/attempt": {
+      "post": {
+        "summary": "Create MockTest",
+        "description": "Creates a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockTest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teacher-mocktest/attempt/:userId/:subjectId/:mockTestId": {
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher-mocktest/report/:userId": {
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mocktest/attempt-status": {
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student/:studentId/subjects": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subject/:subjectId/mock-tests": {
+      "get": {
+        "summary": "Retrieve Subject",
+        "description": "Retrieves a Subject resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/points/long-format": {
+      "post": {
+        "summary": "Create Points",
+        "description": "Creates a Points resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Points"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Points"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/points/short-format": {
+      "post": {
+        "summary": "Create Points",
+        "description": "Creates a Points resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Points"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Points"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/points/long-format/:userId": {
+      "get": {
+        "summary": "Retrieve Points",
+        "description": "Retrieves a Points resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Points"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/points/short-format/:userId": {
+      "get": {
+        "summary": "Retrieve Points",
+        "description": "Retrieves a Points resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Points"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student-mocktest/points": {
+      "post": {
+        "summary": "Create MockTest",
+        "description": "Creates a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockTest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/students/teacher/:teacherId": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student-report/:studentId": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher-report/:teacherId": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/chapter/:userId/:chapterId": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subject/:userId/:subjectId": {
+      "get": {
+        "summary": "Retrieve Subject",
+        "description": "Retrieves a Subject resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/batch/:userId/:batchId": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/user/:userId/unified-progress": {
+      "get": {
+        "summary": "Retrieve unified progress Resource",
+        "description": "Retrieves a resource at /user/:userId/unified-progress",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/": {
+      "post": {
+        "summary": "Create  Resource",
+        "description": "Creates a resource at /",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/presign-url": {
+      "get": {
+        "summary": "Retrieve presign url Resource",
+        "description": "Retrieves a resource at /presign-url",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/progress/:userId/:shortFormId": {
+      "get": {
+        "summary": "Retrieve :shortFormId Resource",
+        "description": "Retrieves a resource at /progress/:userId/:shortFormId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/shortform/report/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /shortform/report/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/shortform/attempt-status": {
+      "get": {
+        "summary": "Retrieve attempt status Resource",
+        "description": "Retrieves a resource at /shortform/attempt-status",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student/subjects-with-teachers": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/boards": {
+      "get": {
+        "summary": "Retrieve Board",
+        "description": "Retrieves a Board resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/student/presigned-url": {
+      "post": {
+        "summary": "Create Student",
+        "description": "Creates a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Student"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/createstudent": {
+      "put": {
+        "summary": "Update Student",
+        "description": "Updates a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Student"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/:id": {
+      "put": {
+        "summary": "Update Student",
+        "description": "Updates a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Student"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/personal-details": {
+      "post": {
+        "summary": "Create personal details Resource",
+        "description": "Creates a resource at /personal-details",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/educational-details": {
+      "post": {
+        "summary": "Create educational details Resource",
+        "description": "Creates a resource at /educational-details",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/avatar": {
+      "post": {
+        "summary": "Create avatar Resource",
+        "description": "Creates a resource at /avatar",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload-avatar": {
+      "post": {
+        "summary": "Create upload avatar Resource",
+        "description": "Creates a resource at /upload-avatar",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/terms": {
+      "post": {
+        "summary": "Create terms Resource",
+        "description": "Creates a resource at /terms",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create-payment": {
+      "post": {
+        "summary": "Create create payment Resource",
+        "description": "Creates a resource at /create-payment",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mark-tutorial-viewed": {
+      "post": {
+        "summary": "Create mark tutorial viewed Resource",
+        "description": "Creates a resource at /mark-tutorial-viewed",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check-student-onboarding/:userId": {
+      "get": {
+        "summary": "Retrieve Board",
+        "description": "Retrieves a Board resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Board"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subject/:classId": {
+      "get": {
+        "summary": "Retrieve Class",
+        "description": "Retrieves a Class resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subjects-by-classes": {
+      "post": {
+        "summary": "Create Class",
+        "description": "Creates a Class resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Class"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/:studentId/batches": {
+      "get": {
+        "summary": "Retrieve Batch",
+        "description": "Retrieves a Batch resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Batch"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/subjects": {
+      "get": {
+        "summary": "Retrieve Subject",
+        "description": "Retrieves a Subject resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subject"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mcqs/:chapterId": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/longformatvideos/:chapterId": {
+      "get": {
+        "summary": "Retrieve Chapter",
+        "description": "Retrieves a Chapter resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Chapter"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mocktests/:subjectId": {
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mcq/submit": {
+      "post": {
+        "summary": "Create MCQ",
+        "description": "Creates a MCQ resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MCQ"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MCQ"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "post": {
+        "summary": "Create Notification",
+        "description": "Creates a Notification resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Notification"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/:studentId": {
+      "get": {
+        "summary": "Retrieve Notification",
+        "description": "Retrieves a Notification resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/presigned-url": {
+      "get": {
+        "summary": "Retrieve presigned url Resource",
+        "description": "Retrieves a resource at /presigned-url",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create presigned url Resource",
+        "description": "Creates a resource at /presigned-url",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/:id/full-learning-data": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/longformatvideo/progress": {
+      "post": {
+        "summary": "Create LongFormatVideo",
+        "description": "Creates a LongFormatVideo resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LongFormatVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LongFormatVideo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/longformatvideo/mcqsubmission": {
+      "post": {
+        "summary": "Create LongFormatVideo",
+        "description": "Creates a LongFormatVideo resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LongFormatVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LongFormatVideo"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/longformatvideo/progress/:userId/:videoId": {
+      "get": {
+        "summary": "Retrieve LongFormatVideo",
+        "description": "Retrieves a LongFormatVideo resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LongFormatVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/longformatvideo/mcqsubmission/:userId/:videoId/:mcqId": {
+      "get": {
+        "summary": "Retrieve LongFormatVideo",
+        "description": "Retrieves a LongFormatVideo resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LongFormatVideo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mocktest/submit": {
+      "post": {
+        "summary": "Create MockTest",
+        "description": "Creates a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockTest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shortform/submit": {
+      "post": {
+        "summary": "Create submit Resource",
+        "description": "Creates a resource at /shortform/submit",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mocktest/submission/:userId/:mockTestId": {
+      "get": {
+        "summary": "Retrieve MockTest",
+        "description": "Retrieves a MockTest resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MockTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/shortform/progress/:userId/:shortFormContentId": {
+      "get": {
+        "summary": "Retrieve ShortFormContent",
+        "description": "Retrieves a ShortFormContent resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortFormContent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teachers/:teacherId/students": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher/assigned-students": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher/earnings/last-month": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher/referral-code": {
+      "get": {
+        "summary": "Retrieve Teacher",
+        "description": "Retrieves a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teacher/classwise-students-count": {
+      "get": {
+        "summary": "Retrieve Class",
+        "description": "Retrieves a Class resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Class"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/mock-tests/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /mock-tests/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/teachersignup": {
+      "put": {
+        "summary": "Update Teacher",
+        "description": "Updates a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Teacher"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/updateTeacher/:id": {
+      "put": {
+        "summary": "Update Teacher",
+        "description": "Updates a Teacher resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Teacher"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Teacher"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/list": {
+      "get": {
+        "summary": "Retrieve Student",
+        "description": "Retrieves a Student resource",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Student"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/short-forms/:userId": {
+      "get": {
+        "summary": "Retrieve :userId Resource",
+        "description": "Retrieves a resource at /short-forms/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/profile/:userId": {
+      "put": {
+        "summary": "Update :userId Resource",
+        "description": "Updates a resource at /profile/:userId",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AppUser": {
+        "type": "object",
+        "properties": {
+          "mobile": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "example": "user"
+          },
+          "isApproved": {
+            "type": "boolean"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Batch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "boardId": {
+            "type": "objectid"
+          },
+          "classId": {
+            "type": "objectid"
+          },
+          "subjectIds": {
+            "type": "array"
+          },
+          "chapterIds": {
+            "type": "array"
+          },
+          "teacherId": {
+            "type": "objectid"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "students": {
+            "type": "array"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Board": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "language": {
+            "type": "objectid"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Chapter": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "objectid"
+          },
+          "contents": {
+            "type": "array"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Class": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Language": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "LongFormatVideo": {
+        "type": "object",
+        "properties": {
+          "chapterId": {
+            "type": "objectid"
+          },
+          "videoUrl": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "string"
+          },
+          "timestamps": {
+            "type": "array"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "MCQ": {
+        "type": "object",
+        "properties": {
+          "chapter": {
+            "type": "objectid"
+          },
+          "format": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array"
+          },
+          "question": {
+            "type": "string"
+          },
+          "questionImage": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array"
+          },
+          "correctOption": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "MockTest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string"
+          },
+          "timer": {
+            "type": "number"
+          },
+          "mcqs": {
+            "type": "array"
+          },
+          "subject": {
+            "type": "objectid"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "MockTestAttempt": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "subjectId": {
+            "type": "objectid"
+          },
+          "mockTestId": {
+            "type": "objectid"
+          },
+          "isAttempted": {
+            "type": "boolean"
+          },
+          "mcqAttempts": {
+            "type": "array"
+          },
+          "totalMcqsAttempted": {
+            "type": "number"
+          },
+          "correctCount": {
+            "type": "number"
+          },
+          "incorrectCount": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "MockTestPoints": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "subjectId": {
+            "type": "objectid"
+          },
+          "mockTestId": {
+            "type": "objectid"
+          },
+          "mcqId": {
+            "type": "objectid"
+          },
+          "points": {
+            "type": "number"
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          }
+        }
+      },
+      "MockTestSubmission": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "objectid"
+          },
+          "mockTestId": {
+            "type": "objectid"
+          },
+          "answers": {
+            "type": "array"
+          },
+          "score": {
+            "type": "number"
+          },
+          "totalQuestions": {
+            "type": "number"
+          },
+          "submittedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "objectid"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Points": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "mcqId": {
+            "type": "objectid"
+          },
+          "format": {
+            "type": "string"
+          },
+          "longFormatId": {
+            "type": "objectid"
+          },
+          "shortFormId": {
+            "type": "objectid"
+          },
+          "points": {
+            "type": "number"
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "role": {
+            "type": "string",
+            "example": "user"
+          },
+          "isAttempted": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "ShortFormContent": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "chapterId": {
+            "type": "objectid"
+          },
+          "thumbnailUrl": {
+            "type": "string"
+          },
+          "sequence": {
+            "type": "array"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "ShortFormProgress": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "chapterId": {
+            "type": "objectid"
+          },
+          "shortFormId": {
+            "type": "objectid"
+          },
+          "watchedClipIndexes": {
+            "type": "array"
+          },
+          "attemptedMcqIds": {
+            "type": "array"
+          },
+          "mcqAttempts": {
+            "type": "array"
+          },
+          "totalMcqsAttempted": {
+            "type": "number"
+          },
+          "correctCount": {
+            "type": "number"
+          },
+          "incorrectCount": {
+            "type": "number"
+          },
+          "isWatched": {
+            "type": "boolean"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "isApproved": {
+            "type": "boolean"
+          },
+          "rejected": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "studentUid": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "referralCode": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "pinCode": {
+            "type": "string"
+          },
+          "parentsMobile": {
+            "type": "string"
+          },
+          "parentEmail": {
+            "type": "string"
+          },
+          "fatherName": {
+            "type": "string"
+          },
+          "motherName": {
+            "type": "string"
+          },
+          "fatherOccupation": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "fatherTitle": {
+            "type": "string"
+          },
+          "motherTitle": {
+            "type": "string"
+          },
+          "motherOccupation": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "objectid"
+          },
+          "className": {
+            "type": "string"
+          },
+          "termsAccepted": {
+            "type": "boolean"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "boardId": {
+            "type": "objectid"
+          },
+          "boardName": {
+            "type": "string"
+          },
+          "billingCode": {
+            "type": "string"
+          },
+          "affiliatedReferralCode": {
+            "type": "string"
+          },
+          "taggedTeacher": {
+            "type": "objectid"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "assignedTeachers": {
+            "type": "array"
+          },
+          "isBlocked": {
+            "type": "boolean"
+          },
+          "createdByAdmin": {
+            "type": "boolean"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          }
+        }
+      },
+      "Subject": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "thumbnail": {
+            "type": "string"
+          },
+          "class": {
+            "type": "objectid"
+          },
+          "mockTest": {
+            "type": "objectid"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Teacher": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "isApproved": {
+            "type": "boolean"
+          },
+          "rejected": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "mobile": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "user@example.com"
+          },
+          "state": {
+            "type": "string"
+          },
+          "pinCode": {
+            "type": "string"
+          },
+          "instituteName": {
+            "type": "string"
+          },
+          "qualification": {
+            "type": "string"
+          },
+          "board": {
+            "type": "string"
+          },
+          "classes": {
+            "type": "array"
+          },
+          "subjects": {
+            "type": "array"
+          },
+          "assignedClasses": {
+            "type": "array"
+          },
+          "assignedSubjects": {
+            "type": "array"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "billingCode": {
+            "type": "string"
+          },
+          "referralCode": {
+            "type": "string"
+          },
+          "createdByAdmin": {
+            "type": "boolean"
+          },
+          "termsAccepted": {
+            "type": "boolean"
+          },
+          "isBlocked": {
+            "type": "boolean"
+          },
+          "students": {
+            "type": "array"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "TeacherEarning": {
+        "type": "object",
+        "properties": {
+          "uniqueId": {
+            "type": "string"
+          },
+          "date": {
+            "type": "date"
+          },
+          "year": {
+            "type": "number"
+          },
+          "month": {
+            "type": "number"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "referralEarningQty": {
+            "type": "number"
+          },
+          "referralEarningAmount": {
+            "type": "number"
+          },
+          "salesAssistQty": {
+            "type": "number"
+          },
+          "salesAssistAmount": {
+            "type": "number"
+          },
+          "directSalesQty": {
+            "type": "number"
+          },
+          "directSalesAmount": {
+            "type": "number"
+          },
+          "offlineDoubtClassQty": {
+            "type": "number"
+          },
+          "offlineDoubtClassAmount": {
+            "type": "number"
+          },
+          "totalEarning": {
+            "type": "number"
+          },
+          "teacher": {
+            "type": "objectid"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "TeacherProgress": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "chapterId": {
+            "type": "objectid"
+          },
+          "videoId": {
+            "type": "objectid"
+          },
+          "mcqAttempts": {
+            "type": "array"
+          },
+          "timestampInteractions": {
+            "type": "array"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "token": {
+            "type": "string"
+          },
+          "expiry": {
+            "type": "date"
+          },
+          "createdAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "VideoMCQSubmission": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "objectid"
+          },
+          "videoId": {
+            "type": "objectid"
+          },
+          "chapterId": {
+            "type": "objectid"
+          },
+          "answers": {
+            "type": "array"
+          },
+          "score": {
+            "type": "number"
+          },
+          "totalQuestions": {
+            "type": "number"
+          },
+          "submittedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      },
+      "VideoProgress": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "objectid"
+          },
+          "videoId": {
+            "type": "objectid"
+          },
+          "chapterId": {
+            "type": "objectid"
+          },
+          "resumeTime": {
+            "type": "number"
+          },
+          "totalTime": {
+            "type": "number"
+          },
+          "progress": {
+            "type": "number"
+          },
+          "isWatched": {
+            "type": "boolean"
+          },
+          "updatedAt": {
+            "type": "date"
+          },
+          "_id": {
+            "type": "string",
+            "description": "MongoDB ObjectId",
+            "example": "507f1f77bcf86cd799439011"
+          }
+        }
+      }
+    }
+  }
+}

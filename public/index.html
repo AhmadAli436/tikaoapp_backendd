@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaOwl - Learning Platform</title>
+  <style>
+    .error { color: red; }
+    textarea { resize: vertical; }
+    .batch-list { margin-top: 20px; }
+    .batch-item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    .chapter-item { cursor: pointer; padding: 5px; }
+    .chapter-item:hover { background-color: #f0f0f0; }
+    video { width: 100%; max-width: 600px; }
+    .mcq-item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+    .mcq-options label { display: block; margin: 5px 0; }
+    .mcq-feedback { color: green; font-weight: bold; }
+    .mcq-error { color: red; }
+    .progress-summary { margin: 10px 0; font-style: italic; }
+    .payment-status { font-weight: bold; margin-top: 10px; }
+    .status-message { margin-top: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="intro-screen">
+    <h1>Welcome to InstaOwl</h1>
+    <p>InstaOwl is your personalized learning platform connecting passionate teachers with eager students. Whether you're here to teach or learn, start your journey today!</p>
+    <button onclick="showScreen('mobile-screen')">Get Started</button>
+  </div>
+
+  <div id="mobile-screen" style="display: none;">
+    <h1>Enter Mobile Number</h1>
+    <p>We'll send you an OTP to verify your number.</p>
+    <form id="mobile-form">
+      <label for="mobile">Mobile Number:</label><br>
+      <input type="text" id="mobile" placeholder="e.g., 03428560636" required><br>
+      <button type="submit">Send OTP</button>
+    </form>
+    <p id="mobile-error" class="error"></p>
+  </div>
+
+  <div id="otp-screen" style="display: none;">
+    <h1>OTP Verification</h1>
+    <p>Enter the OTP sent to your mobile number.</p>
+    <form id="otp-form">
+      <input type="hidden" id="otp-mobile">
+      <label for="otp">OTP:</label><br>
+      <input type="text" id="otp" placeholder="Enter 1234 for testing" required><br>
+      <button type="submit">Verify OTP</button>
+    </form>
+    <p id="otp-error" class="error"></p>
+  </div>
+
+  <div id="role-screen" style="display: none;">
+    <h1>Choose Your Role</h1>
+    <p>Are you a teacher or a student?</p>
+    <button onclick="selectRole('teacher')">I am a Teacher</button>
+    <button onclick="selectRole('student')">I am a Student</button>
+    <p id="role-error" class="error"></p>
+  </div>
+
+  <div id="teacher-approval-pending" style="display: none;">
+    <h1>Approval Pending</h1>
+    <p id="teacher-approval-message" class="status-message"></p>
+    <p id="payment-status" class="payment-status"></p>
+    <button onclick="showScreen('mobile-screen')">Back to Sign In</button>
+  </div>
+
+  <div id="teacher-rejected" style="display: none;">
+    <h1>Application Rejected</h1>
+    <p id="teacher-rejected-message" class="status-message"></p>
+    <button onclick="showScreen('mobile-screen')">Back to Sign In</button>
+  </div>
+
+  <div id="teacher-contact-us" style="display: none;">
+    <h1>Contact Us</h1>
+    <p>Please fill out the form to apply as a teacher.</p>
+    <form id="teacher-contact-form">
+      <label for="contact-title">Title:</label><br>
+      <select id="contact-title" required>
+        <option value="">Select Title</option>
+        <option value="Mr">Mr</option>
+        <option value="Ms">Ms</option>
+        <option value="Mrs">Mrs</option>
+        <option value="Dr">Dr</option>
+      </select><br>
+      <label for="contact-name">Name:</label><br>
+      <input type="text" id="contact-name" required><br>
+      <label for="contact-gender">Gender:</label><br>
+      <select id="contact-gender" required>
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select><br>
+      <label for="contact-email">Email:</label><br>
+      <input type="email" id="contact-email" required><br>
+      <label for="contact-state">State:</label><br>
+      <input type="text" id="contact-state" placeholder="e.g., Delhi" required><br>
+      <label for="contact-pincode">Pin Code:</label><br>
+      <input type="text" id="contact-pincode" required><br>
+      <label for="contact-institute">Name of Institute:</label><br>
+      <input type="text" id="contact-institute" placeholder="e.g., Example University" required><br>
+      <label for="contact-qualification">Qualification:</label><br>
+      <input type="text" id="contact-qualification" placeholder="e.g., MSc Physics" required><br>
+      <label for="contact-bio">Bio (max 250 words):</label><br>
+      <textarea id="contact-bio" rows="5" maxlength="1500" required></textarea><br>
+      <p id="contact-bio-word-count">0/250 words</p>
+      <button type="submit">Submit</button>
+    </form>
+    <p id="teacher-contact-error" class="error"></p>
+  </div>
+
+  <div id="teacher-terms" style="display: none;">
+    <h1>Terms and Conditions</h1>
+    <p>Please accept the terms to proceed.</p>
+    <form id="teacher-terms-form">
+      <label>
+        <input type="checkbox" id="teacher-terms-checkbox" required>
+        I accept the terms and conditions
+      </label><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="teacher-terms-error" class="error"></p>
+  </div>
+
+  <div id="payment-screen" style="display: none;">
+    <h1>Payment</h1>
+    <p>Proceed with your subscription payment (dummy gateway).</p>
+    <button onclick="handlePayment()">Pay Now</button>
+    <p id="payment-error" class="error"></p>
+  </div>
+
+  <div id="teacher-personal-details" style="display: none;">
+    <h1>Teacher Personal Details</h1>
+    <p>Provide or update your personal information to continue.</p>
+    <form id="teacher-personal-form">
+      <label for="teacher-title">Title:</label><br>
+      <select id="teacher-title" required>
+        <option value="">Select Title</option>
+        <option value="Mr">Mr</option>
+        <option value="Ms">Ms</option>
+        <option value="Mrs">Mrs</option>
+        <option value="Dr">Dr</option>
+      </select><br>
+      <label for="teacher-name">Full Name:</label><br>
+      <!-- Fixed typo: Changed type="teacher" id="text" to type="text" id="teacher-name" -->
+      <input type="text" id="teacher-name" required><br>
+      <label for="teacher-gender">Gender:</label><br>
+      <select id="teacher-gender" required>
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select><br>
+      <label for="teacher-email">Email:</label><br>
+      <input type="email" id="teacher-email" required><br>
+      <label for="teacher-pincode">Pin Code:</label><br>
+      <input type="text" id="teacher-pincode" required><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="teacher-personal-error" class="error"></p>
+  </div>
+
+  <div id="teacher-professional-details" style="display: none;">
+    <h1>Teacher Professional Details</h1>
+    <p>Provide your professional qualifications.</p>
+    <form id="teacher-professional-form">
+      <label for="teacher-qualification">Qualification:</label><br>
+      <input type="text" id="teacher-qualification" placeholder="e.g., MSc Physics" required><br>
+      <label for="teacher-experience">Years of Experience:</label><br>
+      <input type="number" id="teacher-experience" min="0" required><br>
+      <label for="teacher-bio">Bio (max 250 words):</label><br>
+      <textarea id="teacher-bio" rows="5" maxlength="1500" required></textarea><br>
+      <p id="bio-word-count">0/250 words</p>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="teacher-professional-error" class="error"></p>
+  </div>
+
+  <div id="teacher-avatar" style="display: none;">
+    <h1>Select Avatar</h1>
+    <p>Choose an avatar for your profile.</p>
+    <form id="teacher-avatar-form">
+      <label for="teacher-avatar-select">Avatar:</label><br>
+      <select id="teacher-avatar-select" required>
+        <option value="">Select Avatar</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="teacher-avatar-error" class="error"></p>
+  </div>
+
+  <div id="student-details" style="display: none;">
+    <h1>Student Personal Details</h1>
+    <p>Complete your profile to start learning with InstaOwl.</p>
+    <form id="student-details-form">
+      <label for="student-title">Title:</label><br>
+      <select id="student-title" required>
+        <option value="">Select Title</option>
+        <option value="Mr">Mr</option>
+        <option value="Ms">Ms</option>
+        <option value="Mrs">Mrs</option>
+        <option value="Dr">Dr</option>
+      </select><br>
+      <label for="student-firstname">First Name:</label><br>
+      <input type="text" id="student-firstname" placeholder="e.g., John" required><br>
+      <label for="student-lastname">Last Name:</label><br>
+      <input type="text" id="student-lastname" placeholder="e.g., Doe" required><br>
+      <label for="student-gender">Gender:</label><br>
+      <select id="student-gender" required>
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select><br>
+      <label for="student-email">Email:</label><br>
+      <input type="email" id="student-email" placeholder="e.g., john@example.com" required><br>
+      <label for="student-pincode">Pin Code:</label><br>
+      <input type="text" id="student-pincode" placeholder="e.g., 123456" required><br>
+      <label for="student-state">State:</label><br>
+      <input type="text" id="student-state" placeholder="e.g., Delhi" required><br>
+      <button type="submit">Submit Personal Details</button>
+    </form>
+    <p id="student-details-error" class="error"></p>
+  </div>
+
+  <div id="student-educational-details" style="display: none;">
+    <h1>Student Educational Details</h1>
+    <p>Provide your educational information.</p>
+    <form id="student-educational-form">
+      <label for="student-class">Class:</label><br>
+      <input type="text" id="student-class" placeholder="e.g., 10" required><br>
+      <label for="student-board">Board:</label><br>
+      <input type="text" id="student-board" placeholder="e.g., CBSE" required><br>
+      <label for="student-school">School Name:</label><br>
+      <input type="text" id="student-school" placeholder="e.g., Example School" required><br>
+      <label for="student-uid">Unique ID (UID):</label><br>
+      <input type="text" id="student-uid" placeholder="e.g., 12345" required><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="student-educational-error" class="error"></p>
+  </div>
+
+  <div id="student-avatar-screen" style="display: none;">
+    <h1>Select Avatar</h1>
+    <p>Choose an avatar for your profile.</p>
+    <form id="student-avatar-form">
+      <label for="student-avatar">Avatar:</label><br>
+      <select id="student-avatar" required>
+        <option value="">Select Avatar</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="student-avatar-error" class="error"></p>
+  </div>
+
+  <div id="student-terms" style="display: none;">
+    <h1>Terms and Conditions</h1>
+    <p>Please accept the terms to proceed.</p>
+    <form id="student-terms-form">
+      <label>
+        <input type="checkbox" id="student-terms-checkbox" required>
+        I accept the terms and conditions
+      </label><br>
+      <button type="submit">Save and Continue</button>
+    </form>
+    <p id="student-terms-error" class="error"></p>
+  </div>
+
+  <div id="welcome-screen" style="display: none;">
+    <h1>Welcome to InstaOwl!</h1>
+    <p>Your learning journey begins here. Explore our tutorial to get started.</p>
+    <button onclick="handleWelcome()">Continue to Dashboard</button>
+    <p id="welcome-error" class="error"></p>
+  </div>
+
+  <div id="dashboard-screen" style="display: none;">
+    <h1>Student Dashboard</h1>
+    <p>Welcome to your learning journey with InstaOwl! Start exploring your courses.</p>
+  </div>
+
+  <div id="teacher-dashboard" style="display: none;">
+    <h1>Teacher Dashboard</h1>
+    <p>Welcome to your teaching journey with InstaOwl! Manage your batches below.</p>
+    <button onclick="showScreen('add-batch-screen')">Add a Batch</button>
+    <button onclick="listBatches()">List Batches</button>
+    <div id="batch-list" class="batch-list"></div>
+  </div>
+
+  <div id="add-batch-screen" style="display: none;">
+    <h1>Add a Batch</h1>
+    <form id="add-batch-form">
+      <label for="batch-name">Batch Name:</label><br>
+      <input type="text" id="batch-name" required><br>
+      <label for="class-select">Class:</label><br>
+      <select id="class-select" required onchange="loadSubjects()">
+        <option value="">Select Class</option>
+      </select><br>
+      <label for="subject-select">Subject:</label><br>
+      <select id="subject-select" required>
+        <option value="">Select Subject</option>
+      </select><br>
+      <label for="language-select">Language:</label><br>
+      <select id="language-select" required>
+        <option value="">Select Language</option>
+      </select><br>
+      <button type="submit">Create Batch</button>
+    </form>
+    <p id="add-batch-error" class="error"></p>
+    <button onclick="showScreen('teacher-dashboard')">Back to Dashboard</button>
+  </div>
+
+  <div id="batch-list-screen" style="display: none;">
+    <h1>List of Batches</h1>
+    <p>Your created batches are listed below.</p>
+    <div id="batch-list-display"></div>
+    <p id="batch-list-error" class="error"></p>
+    <button onclick="showScreen('teacher-dashboard')">Back to Dashboard</button>
+  </div>
+
+  <div id="chapter-selection-screen" style="display: none;">
+    <h1>Select Chapter</h1>
+    <p>Choose a chapter to view its content.</p>
+    <div id="chapter-list"></div>
+    <p id="chapter-error" class="error"></p>
+    <button onclick="showScreen('batch-list-screen')">Back to Batches</button>
+  </div>
+
+  <div id="video-mcq-screen" style="display: none;">
+    <h1>Chapter Content</h1>
+    <p>Watch the video and answer the MCQs below.</p>
+    <video id="video-player" controls></video>
+    <h3>MCQs</h3>
+    <div id="mcq-list"></div>
+    <p id="video-mcq-error" class="error"></p>
+    <button onclick="showScreen('chapter-selection-screen')">Back to Chapters</button>
+  </div>
+
+  <script>
+    let userId = null;
+    let mobileNumber = null;
+    let userStatus = null;
+    let selectedBatch = null;
+    let paymentStatus = null;
+    let token = null;
+
+    function showScreen(screenId) {
+      console.log('Showing screen:', screenId);
+      document.querySelectorAll('div[id$="-screen"], div[id$="-details"], div[id$="-dashboard"], div[id$="-form"], div[id$="-pending"], div[id$="-rejected"]').forEach(div => div.style.display = 'none');
+      const targetScreen = document.getElementById(screenId);
+      if (targetScreen) {
+        targetScreen.style.display = 'block';
+        if (screenId === 'teacher-approval-pending' && paymentStatus) {
+          document.getElementById('payment-status').textContent = `Payment Status: ${paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}`;
+        }
+      } else {
+        console.error(`Screen with ID ${screenId} not found`);
+      }
+    }
+
+    function populateTeacherForm(details) {
+      document.getElementById('teacher-title').value = details.title || '';
+      document.getElementById('teacher-name').value = details.name || '';
+      document.getElementById('teacher-gender').value = details.gender || '';
+      document.getElementById('teacher-email').value = details.email || '';
+      document.getElementById('teacher-pincode').value = details.pinCode || '';
+      document.getElementById('teacher-qualification').value = details.qualification || '';
+      document.getElementById('teacher-experience').value = details.experience || '';
+      document.getElementById('teacher-bio').value = details.bio || '';
+      document.getElementById('teacher-avatar-select').value = details.avatar || '';
+      document.getElementById('teacher-terms-checkbox').checked = details.termsAccepted || false;
+    }
+
+    async function checkStudentOnboarding(userId) {
+      try {
+        const res = await fetch(`/api/student/onboarding/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Student onboarding response:', data);
+        if (res.ok) {
+          if (!data.isOnboardingComplete) {
+            showScreen(data.nextScreen === 'student-avatar' ? 'student-avatar-screen' : data.nextScreen);
+          } else {
+            showScreen('welcome-screen');
+          }
+        } else {
+          document.getElementById('otp-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Check student onboarding error:', err);
+        document.getElementById('otp-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function checkTeacherDetails() {
+      console.log('Checking teacher details for user:', { userId, token });
+      try {
+        const res = await fetch(`/api/auth/teacher-approval/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Teacher approval response:', data);
+        if (res.ok) {
+          paymentStatus = data.paymentStatus || 'pending'; // Update paymentStatus
+          console.log('Payment status from teacher approval:', paymentStatus); // Log for debugging
+          populateTeacherForm(data.userDetails);
+          document.getElementById('payment-status').textContent = `Payment Status: ${paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}`;
+
+          if (data.rejected) {
+            document.getElementById('teacher-rejected-message').textContent = data.message;
+            showScreen('teacher-rejected');
+          } else if (!data.isApproved) {
+            document.getElementById('teacher-approval-message').textContent = data.message;
+            showScreen('teacher-approval-pending');
+          } else if (data.paymentStatus !== 'completed') {
+            document.getElementById('teacher-approval-message').textContent = data.message;
+            showScreen('payment-screen');
+          } else {
+            console.log('Redirecting to teacher-dashboard'); // Log redirection
+            showScreen('teacher-dashboard');
+            listBatches();
+          }
+        } else {
+          console.error('Teacher approval error:', data.message);
+          document.getElementById('otp-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Check teacher approval error:', err);
+        document.getElementById('otp-error').textContent = 'Something went wrong';
+      }
+    }
+
+    document.getElementById('mobile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      mobileNumber = document.getElementById('mobile').value;
+      console.log('Sending mobile number:', mobileNumber);
+      try {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mobile: mobileNumber }),
+        });
+        const data = await res.json();
+        console.log('Send OTP response:', data);
+        if (res.ok) {
+          userStatus = data.userStatus;
+          document.getElementById('otp-mobile').value = mobileNumber;
+          showScreen('otp-screen');
+          document.getElementById('mobile-error').textContent = '';
+        } else {
+          document.getElementById('mobile-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Send OTP error:', err);
+        document.getElementById('mobile-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('otp-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const otp = document.getElementById('otp').value;
+      const mobile = document.getElementById('otp-mobile').value;
+      console.log('Verifying OTP:', { mobile, otp });
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mobile, otp }),
+        });
+        const data = await res.json();
+        console.log('OTP verification response:', data);
+        if (res.ok) {
+          userId = data.userId;
+          token = data.token;
+          localStorage.setItem('token', token);
+          console.log('Stored userId and token:', { userId, token });
+          paymentStatus = data.userDetails?.paymentStatus || 'pending'; // Update paymentStatus
+          console.log('Payment status from OTP response:', paymentStatus); // Log for debugging
+
+          if (data.isNewUser) {
+            console.log('New user, showing role-screen');
+            showScreen('role-screen');
+          } else if (data.userType === 'student') {
+            await checkStudentOnboarding(userId);
+          // Modified: Simplified teacher-related checks to call checkTeacherDetails for all teacher types
+          } else if (data.userType.startsWith('teacher_')) {
+            await checkTeacherDetails();
+          } else {
+            console.error('Unknown user type:', data.userType);
+            document.getElementById('otp-error').textContent = 'Invalid user type';
+          }
+          document.getElementById('otp-error').textContent = '';
+        } else {
+          console.error('OTP verification failed:', data.message);
+          document.getElementById('otp-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('OTP verification error:', err);
+        document.getElementById('otp-error').textContent = 'Something went wrong';
+      }
+    });
+
+    async function selectRole(role) {
+      console.log('Selecting role:', role);
+      try {
+        const res = await fetch('/api/auth/select-role', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, role }),
+        });
+        const data = await res.json();
+        console.log('Role response:', data);
+        if (res.ok) {
+          token = data.token;
+          localStorage.setItem('token', token);
+          if (role === 'student') {
+            showScreen('student-details');
+          } else if (role === 'teacher') {
+            showScreen('teacher-contact-us');
+          }
+          document.getElementById('role-error').textContent = '';
+        } else {
+          document.getElementById('role-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Role selection error:', err);
+        document.getElementById('role-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function handlePayment() {
+      if (!userId || !token) {
+        console.error('No userId or token available');
+        document.getElementById('payment-error').textContent = 'Please sign in again';
+        showScreen('mobile-screen');
+        return;
+      }
+      try {
+        console.log('Sending payment request:', { userId });
+        const res = await fetch('/api/auth/payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId }),
+        });
+        const data = await res.json();
+        console.log('Payment response:', data);
+        if (res.ok) {
+          paymentStatus = data.paymentStatus;
+          document.getElementById('teacher-approval-message').textContent = 'Your approval request is pending from the admin.';
+          document.getElementById('payment-status').textContent = `Payment Status: ${data.paymentStatus.charAt(0).toUpperCase() + data.paymentStatus.slice(1)}`;
+          showScreen('teacher-approval-pending');
+          document.getElementById('payment-error').textContent = '';
+        } else {
+          paymentStatus = data.paymentStatus || 'failed';
+          document.getElementById('payment-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Payment error:', err);
+        paymentStatus = 'failed';
+        document.getElementById('payment-error').textContent = 'Something went wrong';
+      }
+    }
+
+    document.getElementById('teacher-contact-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const contactDetails = {
+        title: document.getElementById('contact-title').value,
+        name: document.getElementById('contact-name').value,
+        gender: document.getElementById('contact-gender').value,
+        email: document.getElementById('contact-email').value,
+        state: document.getElementById('contact-state').value,
+        pinCode: document.getElementById('contact-pincode').value,
+        instituteName: document.getElementById('contact-institute').value,
+        qualification: document.getElementById('contact-qualification').value,
+        bio: document.getElementById('contact-bio').value,
+      };
+      console.log('Submitting teacher contact details:', contactDetails);
+      try {
+        const res = await fetch('/api/auth/teacher-contact-us', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId, ...contactDetails }),
+        });
+        const data = await res.json();
+        console.log('Teacher contact response:', data);
+        if (res.ok) {
+          showScreen('teacher-terms');
+          document.getElementById('teacher-contact-error').textContent = '';
+        } else {
+          document.getElementById('teacher-contact-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Teacher contact error:', err);
+        document.getElementById('teacher-contact-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('teacher-terms-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const termsAccepted = document.getElementById('teacher-terms-checkbox').checked;
+      console.log('Submitting teacher terms:', { termsAccepted });
+      try {
+        const res = await fetch('/api/auth/teacher-terms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId, termsAccepted }),
+        });
+        const data = await res.json();
+        console.log('Teacher terms response:', data);
+        if (res.ok) {
+          showScreen('payment-screen');
+          document.getElementById('teacher-terms-error').textContent = '';
+        } else {
+          document.getElementById('teacher-terms-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Teacher terms error:', err);
+        document.getElementById('teacher-terms-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('teacher-personal-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const details = {
+        title: document.getElementById('teacher-title').value,
+        name: document.getElementById('teacher-name').value,
+        gender: document.getElementById('teacher-gender').value,
+        email: document.getElementById('teacher-email').value,
+        pinCode: document.getElementById('teacher-pincode').value,
+      };
+      console.log('Sending teacher personal details:', details);
+      try {
+        const res = await fetch('/api/auth/teacher-contact-us', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, ...details }),
+        });
+        const data = await res.json();
+        console.log('Teacher personal response:', data);
+        if (res.ok) {
+          await checkTeacherDetails();
+          document.getElementById('teacher-personal-error').textContent = '';
+        } else {
+          document.getElementById('teacher-personal-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Teacher personal error:', err);
+        document.getElementById('teacher-personal-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('teacher-professional-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const details = {
+        qualification: document.getElementById('teacher-qualification').value,
+        experience: parseInt(document.getElementById('teacher-experience').value),
+        bio: document.getElementById('teacher-bio').value,
+      };
+      console.log('Sending teacher professional details:', details);
+      try {
+        const res = await fetch('/api/auth/teacher-contact-us', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, ...details }),
+        });
+        const data = await res.json();
+        console.log('Teacher professional response:', data);
+        if (res.ok) {
+          await checkTeacherDetails();
+          document.getElementById('teacher-professional-error').textContent = '';
+        } else {
+          document.getElementById('teacher-professional-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Teacher professional error:', err);
+        document.getElementById('teacher-professional-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('teacher-avatar-form').addequalsListener('submit', async (e) => {
+      e.preventDefault();
+      const avatarSelect = document.getElementById('teacher-avatar-select');
+      console.log('Teacher avatar select element:', avatarSelect);
+      if (!avatarSelect) {
+        console.error('Teacher avatar select element not found');
+        document.getElementById('teacher-avatar-error').textContent = 'Form error occurred';
+        return;
+      }
+      let avatar = avatarSelect.value;
+      if (!avatar && avatarSelect.selectedOptions && avatarSelect.selectedOptions[0]) {
+        avatar = avatarSelect.selectedOptions[0].value;
+      }
+      if (!avatar && avatarSelect.selectedIndex >= 0) {
+        avatar = avatarSelect.options[avatarSelect.selectedIndex].value;
+      }
+      console.log('Selected teacher avatar:', avatar);
+      if (!avatar || !['Male', 'Female'].includes(avatar)) {
+        document.getElementById('teacher-avatar-error').textContent = 'Please select a valid avatar (Male or Female)';
+        return;
+      }
+      console.log('Sending teacher avatar:', { userId, avatar });
+      try {
+        const res = await fetch('/api/auth/teacher-contact-us', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId, avatar }),
+        });
+        const data = await res.json();
+        console.log('Teacher avatar response:', data);
+        if (res.ok) {
+          await checkTeacherDetails();
+          document.getElementById('teacher-avatar-error').textContent = '';
+        } else {
+          document.getElementById('teacher-avatar-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Teacher avatar error:', err);
+        document.getElementById('teacher-avatar-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('student-details-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const studentDetails = {
+        title: document.getElementById('student-title').value,
+        firstName: document.getElementById('student-firstname').value,
+        lastName: document.getElementById('student-lastname').value,
+        gender: document.getElementById('student-gender').value,
+        email: document.getElementById('student-email').value,
+        pinCode: document.getElementById('student-pincode').value,
+        state: document.getElementById('student-state').value,
+      };
+      console.log('Sending student details:', studentDetails);
+      try {
+        const res = await fetch('/api/auth/student-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, ...studentDetails }),
+        });
+        const data = await res.json();
+        console.log('Student details response:', data);
+        if (res.ok) {
+          showScreen('student-educational-details');
+          document.getElementById('student-details-error').textContent = '';
+        } else {
+          document.getElementById('student-details-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Student details error:', err);
+        document.getElementById('student-details-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('student-educational-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const educationalDetails = {
+        class: document.getElementById('student-class').value,
+        board: document.getElementById('student-board').value,
+        schoolName: document.getElementById('student-school').value,
+        uid: document.getElementById('student-uid').value,
+      };
+      console.log('Sending student educational details:', educationalDetails);
+      try {
+        const res = await fetch('/api/auth/student-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, ...educationalDetails }),
+        });
+        const data = await res.json();
+        console.log('Student educational response:', data);
+        if (res.ok) {
+          showScreen('student-avatar-screen');
+          document.getElementById('student-educational-error').textContent = '';
+        } else {
+          document.getElementById('student-educational-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Student educational error:', err);
+        document.getElementById('student-educational-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('student-avatar-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const avatarSelect = document.getElementById('student-avatar');
+      console.log('Avatar select element:', avatarSelect);
+      if (!avatarSelect) {
+        console.error('Student avatar select element not found');
+        document.getElementById('student-avatar-error').textContent = 'Form error occurred';
+        return;
+      }
+      let avatar = avatarSelect.value;
+      if (!avatar && avatarSelect.selectedOptions && avatarSelect.selectedOptions[0]) {
+        avatar = avatarSelect.selectedOptions[0].value;
+      }
+      if (!avatar && avatarSelect.selectedIndex >= 0) {
+        avatar = avatarSelect.options[avatarSelect.selectedIndex].value;
+      }
+hyperText = avatar;
+      console.log('Selected avatar:', avatar);
+      if (!avatar || !['Male', 'Female'].includes(avatar)) {
+        document.getElementById('student-avatar-error').textContent = 'Please select a valid avatar (Male or Female)';
+        return;
+      }
+      console.log('Sending student avatar:', { userId, avatar });
+      try {
+        const res = await fetch('/api/auth/student-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, avatar }),
+        });
+        const data = await res.json();
+        console.log('Student avatar response:', data);
+        if (res.ok) {
+          showScreen('student-terms');
+          document.getElementById('student-avatar-error').textContent = '';
+        } else {
+          document.getElementById('student-avatar-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Student avatar error:', err);
+        document.getElementById('student-avatar-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('student-terms-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const termsAccepted = document.getElementById('student-terms-checkbox').checked;
+      console.log('Sending student terms:', { termsAccepted });
+      try {
+        const res = await fetch('/api/auth/student-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ userId, termsAccepted }),
+        });
+        const data = await res.json();
+        console.log('Student terms response:', data);
+        if (res.ok) {
+          showScreen('welcome-screen');
+          document.getElementById('student-terms-error').textContent = '';
+        } else {
+          document.getElementById('student-terms-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Student terms error:', err);
+        document.getElementById('student-terms-error').textContent = 'Something went wrong';
+      }
+    });
+
+    async function handleWelcome() {
+      console.log('Sending welcome request:', userId);
+      try {
+        const res = await fetch(`/api/auth/welcome/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Welcome response:', data);
+        if (res.ok) {
+          showScreen(data.redirect === '/student-dashboard' ? 'dashboard-screen' : 'teacher-dashboard');
+          if (data.redirect === '/teacher-dashboard') {
+            listBatches();
+          }
+          document.getElementById('welcome-error').textContent = '';
+        } else {
+          document.getElementById('welcome-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Welcome error:', err);
+        document.getElementById('welcome-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function loadClasses() {
+      console.log('Loading classes');
+      try {
+        const res = await fetch('/api/batch/classes', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Classes response:', data);
+        if (res.ok) {
+          const classSelect = document.getElementById('class-select');
+          classSelect.innerHTML = '<option value="">Select Class</option>';
+          if (data.classes.length === 0) {
+            document.getElementById('add-batch-error').textContent = 'No classes available';
+          } else {
+            data.classes.forEach(cls => {
+              const option = document.createElement('option');
+              option.value = cls._id;
+              option.textContent = cls.name;
+              classSelect.appendChild(option);
+            });
+          }
+        } else {
+          console.error('Classes fetch error:', data.message);
+          document.getElementById('add-batch-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Load classes error:', err);
+        document.getElementById('add-batch-error').textContent = 'Failed to load classes';
+      }
+    }
+
+    async function loadSubjects() {
+      const classId = document.getElementById('class-select').value;
+      console.log('Loading subjects for classId:', classId);
+      if (!classId) {
+        document.getElementById('subject-select').innerHTML = '<option value="">Select Subject</option>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/batch/subjects/${classId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Subjects response:', data);
+        if (res.ok) {
+          const subjectSelect = document.getElementById('subject-select');
+          subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+          if (data.subjects.length === 0) {
+            document.getElementById('add-batch-error').textContent = 'No subjects available for this class';
+          } else {
+            data.subjects.forEach(subject => {
+              const option = document.createElement('option');
+              option.value = subject._id;
+              option.textContent = subject.name;
+              subjectSelect.appendChild(option);
+            });
+          }
+        } else {
+          console.error('Subjects fetch error:', data.message);
+          document.getElementById('add-batch-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Load subjects error:', err);
+        document.getElementById('add-batch-error').textContent = 'Failed to load subjects';
+      }
+    }
+
+    async function loadLanguages() {
+      console.log('Loading languages');
+      try {
+        const res = await fetch('/api/batch/languages', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Languages response:', data);
+        if (res.ok) {
+          const languageSelect = document.getElementById('language-select');
+          languageSelect.innerHTML = '<option value="">Select Language</option>';
+          if (data.languages.length === 0) {
+            document.getElementById('add-batch-error').textContent = 'No languages available';
+          } else {
+            data.languages.forEach(lang => {
+              const option = document.createElement('option');
+              option.value = lang;
+              option.textContent = lang;
+              languageSelect.appendChild(option);
+            });
+          }
+        } else {
+          console.error('Languages fetch error:', data.message);
+          document.getElementById('add-batch-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Load languages error:', err);
+        document.getElementById('add-batch-error').textContent = 'Failed to load languages';
+      }
+    }
+
+    async function listBatches() {
+      try {
+        const res = await fetch(`/api/batch/batches/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Batches response:', data);
+        if (res.ok) {
+          const batchList = document.getElementById('batch-list-display');
+          batchList.innerHTML = '';
+          if (data.batches.length === 0) {
+            batchList.innerHTML = '<p>No batches found.</p>';
+          } else {
+            data.batches.forEach(batch => {
+              const div = document.createElement('div');
+              div.className = 'batch-item';
+              div.innerHTML = `
+                <p><strong>Name:</strong> ${batch.name}</p>
+                <p><strong>Class:</strong> ${batch.classId.name}</p>
+                <p><strong>Subject:</strong> ${batch.subjectId.name}</p>
+                <p><strong>Language:</strong> ${batch.language}</p>
+                <button onclick="selectBatch('${batch._id}', '${batch.subjectId._id}')">View Chapters</button>
+              `;
+              batchList.appendChild(div);
+            });
+          }
+          showScreen('batch-list-screen');
+        } else {
+          document.getElementById('batch-list-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('List batches error:', err);
+        document.getElementById('batch-list-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function selectBatch(batchId, subjectId) {
+      selectedBatch = { batchId, subjectId };
+      try {
+        const res = await fetch(`/api/batch/chapters/${subjectId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Chapters response:', data);
+        if (res.ok) {
+          const chapterList = document.getElementById('chapter-list');
+          chapterList.innerHTML = '';
+          if (data.chapters.length === 0) {
+            chapterList.innerHTML = '<p>No chapters found.</p>';
+          } else {
+            data.chapters.forEach(chapter => {
+              const div = document.createElement('div');
+              div.className = 'chapter-item';
+              div.innerHTML = `<p>${chapter.name}</p>`;
+              div.onclick = () => loadVideoAndMCQs(chapter._id);
+              chapterList.appendChild(div);
+            });
+          }
+          showScreen('chapter-selection-screen');
+        } else {
+          document.getElementById('chapter-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Load chapters error:', err);
+        document.getElementById('chapter-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function loadVideoAndMCQs(chapterId) {
+      try {
+        const res = await fetch(`/api/batch/video/${chapterId}?userId=${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        console.log('Video and MCQs response:', data);
+        if (res.ok) {
+          const videoPlayer = document.getElementById('video-player');
+          const mcqList = document.getElementById('mcq-list');
+          videoPlayer.src = data.video.videoUrl;
+          mcqList.innerHTML = '';
+
+          const totalMCQs = data.video.timestamps.reduce((sum, t) => sum + (t.mcqs ? t.mcqs.length : 0), 0);
+          const attemptedMCQs = data.progress ? data.progress.mcqAttempts.length : 0;
+          mcqList.innerHTML += `<p class="progress-summary">Progress: ${attemptedMCQs}/${totalMCQs} MCQs attempted</p>`;
+
+          data.video.timestamps.forEach(timestamp => {
+            if (timestamp.mcqs && timestamp.mcqs.length > 0) {
+              timestamp.mcqs.forEach(mcq => {
+                const div = document.createElement('div');
+                div.className = 'mcq-item';
+                div.innerHTML = `
+                  <p><strong>Timestamp:</strong> ${timestamp.title} (${timestamp.startTime}s - ${timestamp.endTime}s)</p>
+                  <p><strong>Question:</strong> ${mcq.question || 'No question text'}</p>
+                  <div class="mcq-options">
+                    ${mcq.options.map((option, index) => `
+                      <label>
+                        <input type="radio" name="mcq-${mcq._id}" value="${option}" ${mcq.previousAttempt && mcq.previousAttempt.selectedOption === option ? 'checked' : ''}>
+                        ${option}
+                      </label>
+                    `).join('')}
+                  </div>
+                  <button onclick="submitMCQ('${mcq._id}', '${chapterId}', '${data.video._id}', ${timestamp.timestampIndex})">Submit Answer</button>
+                  <p class="mcq-feedback" id="feedback-${mcq._id}"></p>
+                  ${mcq.previousAttempt ? `
+                    <p><strong>Previous Attempt:</strong> Selected: ${mcq.previousAttempt.selectedOption}, 
+                    ${mcq.previousAttempt.isCorrect ? 'Correct' : 'Incorrect'}</p>
+                  ` : ''}
+                `;
+                mcqList.appendChild(div);
+              });
+            }
+          });
+          if (mcqList.innerHTML === '') {
+            mcqList.innerHTML = '<p>No MCQs available for this video.</p>';
+          }
+          showScreen('video-mcq-screen');
+        } else {
+          document.getElementById('video-mcq-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Load video and MCQs error:', err);
+        document.getElementById('video-mcq-error').textContent = 'Something went wrong';
+      }
+    }
+
+    async function submitMCQ(mcqId, chapterId, videoId, timestampIndex) {
+      const selectedOption = document.querySelector(`input[name="mcq-${mcqId}"]:checked`);
+      const feedbackElement = document.getElementById(`feedback-${mcqId}`);
+      if (!selectedOption) {
+        feedbackElement.className = 'mcq-error';
+        feedbackElement.textContent = 'Please select an option';
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/batch/submit-mcq', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            userId,
+            chapterId,
+            videoId,
+            mcqId,
+            selectedOption: selectedOption.value,
+            timestampIndex,
+          }),
+        });
+        const data = await res.json();
+        console.log('Submit MCQ response:', data);
+        if (res.ok) {
+          feedbackElement.className = 'mcq-feedback';
+          feedbackElement.textContent = data.isCorrect ? 'Correct!' : 'Incorrect. Try again!';
+          loadVideoAndMCQs(chapterId);
+        } else {
+          feedbackElement.className = 'mcq-error';
+          feedbackElement.textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Submit MCQ error:', err);
+        feedbackElement.className = 'mcq-error';
+        feedbackElement.textContent = 'Something went wrong';
+      }
+    }
+
+    document.getElementById('add-batch-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const batchDetails = {
+        teacherId: userId,
+        classId: document.getElementById('class-select').value,
+        subjectId: document.getElementById('subject-select').value,
+        language: document.getElementById('language-select').value,
+        name: document.getElementById('batch-name').value,
+      };
+      console.log('Sending batch details:', batchDetails);
+      try {
+        const res = await fetch('/api/batch/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(batchDetails),
+        });
+        const data = await res.json();
+        console.log('Create batch response:', data);
+        if (res.ok) {
+          showScreen('teacher-dashboard');
+          document.getElementById('add-batch-error').textContent = '';
+        } else {
+          document.getElementById('add-batch-error').textContent = data.message;
+        }
+      } catch (err) {
+        console.error('Create batch error:', err);
+        document.getElementById('add-batch-error').textContent = 'Something went wrong';
+      }
+    });
+
+    document.getElementById('add-batch-screen').addEventListener('click', () => {
+      console.log('Add batch screen clicked, loading classes and languages');
+      loadClasses();
+      loadLanguages();
+    }, { once: true });
+
+    const bioTextarea = document.getElementById('teacher-bio');
+    const wordCountDisplay = document.getElementById('bio-word-count');
+    if (bioTextarea && wordCountDisplay) {
+      bioTextarea.addEventListener('input', () => {
+        const words = bioTextarea.value.trim().split(/\s+/).filter(word => word.length > 0).length;
+        wordCountDisplay.textContent = `${words}/250 words`;
+        wordCountDisplay.style.color = words > 250 ? 'red' : 'black';
+      });
+    }
+
+    const contactBioTextarea = document.getElementById('contact-bio');
+    const contactWordCountDisplay = document.getElementById('contact-bio-word-count');
+    if (contactBioTextarea && contactWordCountDisplay) {
+      contactBioTextarea.addEventListener('input', () => {
+        const words = contactBioTextarea.value.trim().split(/\s+/).filter(word => word.length > 0).length;
+        contactWordCountDisplay.textContent = `${words}/250 words`;
+        contactWordCountDisplay.style.color = words > 250 ? 'red' : 'black';
+      });
+    }
+  </script>
+</body>
+</html>
