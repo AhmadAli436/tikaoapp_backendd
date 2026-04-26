@@ -5,7 +5,13 @@ import {
   submitQuizAttempt,
   getQuizAttempts,
   getStudentQuizAttempts,
-  getTeacherStudentsAttempts
+  getTeacherStudentsAttempts,
+  getPersonalizedStudySupport,
+  getTeacherConsoleAssistant,
+  getAdminAnalyticsAlerts,
+  getInteractiveGuide,
+  aiChatbotAssistant,
+  executeAutomationCommand,
 } from '../controllers/aiQuizController.js';
 
 const router = express.Router();
@@ -27,5 +33,11 @@ router.get('/students/:studentId/attempts', getStudentQuizAttempts);
 
 // Get teacher's students attempts
 router.get('/teachers/:teacherId/students-attempts', getTeacherStudentsAttempts);
+router.get('/students/:studentId/personalized-support', getPersonalizedStudySupport);
+router.get('/teachers/:teacherId/assistant', getTeacherConsoleAssistant);
+router.get('/admin/analytics-alerts', getAdminAnalyticsAlerts);
+router.get('/guide', getInteractiveGuide);
+router.post('/assistant/chat', aiChatbotAssistant);
+router.post('/automation/execute', executeAutomationCommand);
 
 export default router;
