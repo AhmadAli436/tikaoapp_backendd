@@ -6,6 +6,8 @@ import Points from '../models/Points.js';
 import MocktestPoints from '../models/MocktestPoints.js';
 import PointTransaction from '../models/PointTransaction.js';
 import VideoProgress from '../models/VideoProgress.js';
+
+const QUIZ_POINTS_PER_CORRECT = 20;
 import TeacherEarning from '../models/TeacherEarning.js';
 import Notification from '../models/Notification.js';
 
@@ -93,22 +95,74 @@ export const getTeacherDashboardStats = async (req, res) => {
   }
 };
 
+async function resolveStudentId(id) {
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) return null;
+  const objectId = new mongoose.Types.ObjectId(id);
+  const byStudentDoc = await Student.findById(objectId).select('_id').lean();
+  if (byStudentDoc) return byStudentDoc._id;
+  const byAppUser = await Student.findOne({ userId: objectId }).select('_id').lean();
+  if (byAppUser) return byAppUser._id;
+  return objectId;
+}
+
 export const getGamificationStats = async (req, res) => {
   try {
     const { userId } = req.params;
-    const [points, mockPoints, transactions] = await Promise.all([
-      Points.find({ userId }).lean(),
-      MocktestPoints.find({ userId }).lean(),
-      PointTransaction.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: 'Invalid userId' });
+    }
+
+    const studentObjectId = await resolveStudentId(userId);
+    if (!studentObjectId) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    const [points, mockPoints, transactions, quizAttempts] = await Promise.all([
+      Points.find({ userId: studentObjectId }).lean(),
+      MocktestPoints.find({ userId: studentObjectId }).lean(),
+      PointTransaction.find({ userId: studentObjectId }).sort({ createdAt: -1 }).limit(10).lean(),
+      QuizAttempt.find({ studentId: studentObjectId })
+        .populate('quizId', 'title subject')
+        .sort({ submittedAt: -1 })
+        .limit(20)
+        .lean(),
     ]);
 
     const mcqPoints = points.reduce((s, p) => s + (p.points || 0), 0);
     const mockTestPoints = mockPoints.reduce((s, p) => s + (p.points || 0), 0);
-    const adjustedPoints = transactions.reduce((s, t) => s + t.points, 0);
-    const totalPoints = mcqPoints + mockTestPoints + adjustedPoints;
-    const correctAnswers = points.filter((p) => p.isCorrect).length + mockPoints.filter((p) => p.isCorrect).length;
-    const level = Math.floor(totalPoints / 100) + 1;
+    const transactionPoints = transactions.reduce((s, t) => s + t.points, 0);
+    const quizPoints = quizAttempts.reduce((s, a) => s + (a.score || 0) * QUIZ_POINTS_PER_CORRECT, 0);
+    const quizCorrectAnswers = quizAttempts.reduce((s, a) => s + (a.score || 0), 0);
+
+    const quizScorePoints = Math.max(quizPoints, transactionPoints);
+    const totalPoints = mcqPoints + mockTestPoints + quizScorePoints;
+    const correctAnswers =
+      points.filter((p) => p.isCorrect).length
+      + mockPoints.filter((p) => p.isCorrect).length
+      + quizCorrectAnswers;
+
+    const level = Math.max(1, Math.floor(totalPoints / 100) + 1);
     const xpInLevel = totalPoints % 100;
+
+    const recentActivity = [
+      ...transactions.map((t) => ({
+        type: t.type === 'add' ? 'points_added' : 'points_redeemed',
+        label: t.type === 'add' ? 'Points added' : 'Points redeemed',
+        points: t.points,
+        date: t.createdAt,
+      })),
+      ...quizAttempts.map((a) => ({
+        type: 'quiz_completed',
+        label: a.quizId?.title || 'AI Quiz completed',
+        points: (a.score || 0) * QUIZ_POINTS_PER_CORRECT,
+        score: a.score,
+        totalMarks: a.totalMarks,
+        percentage: a.percentage,
+        date: a.submittedAt,
+      })),
+    ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
 
     return res.status(200).json({
       success: true,
@@ -116,17 +170,22 @@ export const getGamificationStats = async (req, res) => {
         totalPoints,
         mcqPoints,
         mockTestPoints,
-        adjustedPoints,
+        quizPoints: quizScorePoints,
+        adjustedPoints: transactionPoints,
         correctAnswers,
+        quizAttempts: quizAttempts.length,
         level,
         xpInLevel,
         xpToNextLevel: 100 - xpInLevel,
         recentTransactions: transactions,
+        recentActivity,
         badges: [
+          ...(quizAttempts.length >= 1 ? [{ name: 'Quiz Starter', icon: '🚀', desc: 'Completed your first AI quiz' }] : []),
           ...(mcqPoints >= 50 ? [{ name: 'MCQ Master', icon: '🎯', desc: '50+ MCQ points' }] : []),
           ...(mockTestPoints >= 30 ? [{ name: 'Test Champion', icon: '🏆', desc: '30+ mock test points' }] : []),
-          ...(correctAnswers >= 20 ? [{ name: 'Sharp Mind', icon: '🧠', desc: '20+ correct answers' }] : []),
-          ...(totalPoints >= 200 ? [{ name: 'Rising Star', icon: '🌟', desc: '200+ total points' }] : []),
+          ...(quizPoints >= 40 ? [{ name: 'Quiz Warrior', icon: '⚔️', desc: '40+ quiz points' }] : []),
+          ...(correctAnswers >= 5 ? [{ name: 'Sharp Mind', icon: '🧠', desc: '5+ correct answers' }] : []),
+          ...(totalPoints >= 100 ? [{ name: 'Rising Star', icon: '🌟', desc: '100+ total points' }] : []),
           ...(level >= 5 ? [{ name: 'Level 5 Hero', icon: '⚡', desc: 'Reached level 5' }] : []),
         ],
         milestones: [

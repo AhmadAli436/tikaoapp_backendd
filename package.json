@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "swagger-autogen": "node swagger.js"
+    "swagger-autogen": "node swagger.js",
+    "seed:quiz": "node scripts/seedTestQuiz.js",
+    "backfill:points": "node scripts/backfillQuizPoints.js"
   },
   "keywords": [],
   "author": "",

@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import AIQuizTest from '../models/AIQuizTest.js';
 import QuizAttempt from '../models/QuizAttempt.js';
+import PointTransaction from '../models/PointTransaction.js';
+
+const POINTS_PER_CORRECT = 20;
 
 const getMasteryLevel = (percentage) => {
   if (percentage >= 80) return 'advanced';
@@ -75,7 +78,26 @@ export const submitQuizAttempt = async (req, res) => {
 
     await attempt.save();
 
-    res.status(201).json({ success: true, attempt, score, percentage });
+    let pointsEarned = 0;
+    if (studentId && score > 0) {
+      pointsEarned = score * POINTS_PER_CORRECT;
+      await PointTransaction.create({
+        userId: studentId,
+        points: pointsEarned,
+        type: 'add',
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      attempt,
+      score,
+      percentage,
+      pointsEarned,
+      message: pointsEarned > 0
+        ? `You earned ${pointsEarned} points! Check the Rewards tab.`
+        : 'Quiz submitted. Keep practicing to earn points!',
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to submit quiz', error: error.message });
   }

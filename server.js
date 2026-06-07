@@ -41,6 +41,7 @@ import './models/LongFormatVideo.js';
 import './models/Board.js';
 import './models/AIQuizTest.js';
 import './models/QuizAttempt.js';
+import './models/PointTransaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
