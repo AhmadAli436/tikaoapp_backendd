@@ -25,6 +25,10 @@ import earningsRoutes from './routes/earningsRoutes.js'
 import teacherDashboardRoutes from './routes/teacherDashboardRoutes.js'
 import studentDashboard  from './routes/studentDashboard.js'
 import aiQuizRoutes from './routes/aiQuizRoutes.js'
+import careerRoutes from './routes/careerRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js'
+import messagingRoutes from './routes/messagingRoutes.js'
+import mobileDashboardRoutes from './routes/mobileDashboardRoutes.js'
 // Import models to register them
 import './models/AppUser.js';
 import './models/Teacher.js';
@@ -86,6 +90,12 @@ app.use('/api/studentdashboard', studentDashboard);
 
 //AI quiz routes
 app.use('/api/ai-quiz', aiQuizRoutes);
+
+// Module routes
+app.use('/api/career', careerRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/messages', messagingRoutes);
+app.use('/api/mobile-dashboard', mobileDashboardRoutes);
 
 //test route
 app.get('/api/test', (req, res) => {

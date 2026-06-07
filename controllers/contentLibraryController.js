@@ -118,3 +118,48 @@ export const getClasses = async (req, res) => {
     res.status(500).json({ message: 'Server error while fetching classes' });
   }
 };
+
+export const getChapterContent = async (req, res) => {
+  try {
+    const { chapterId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(chapterId)) {
+      return res.status(400).json({ message: 'Invalid chapter ID' });
+    }
+
+    const chapter = await Chapter.findById(chapterId).populate('subject', 'name').lean();
+    if (!chapter) return res.status(404).json({ message: 'Chapter not found' });
+
+    const [mcqs, longFormatVideos, shortFormContents] = await Promise.all([
+      MCQ.find({ chapter: chapterId }).lean(),
+      LongFormatVideo.find({ chapterId })
+        .populate('timestamps.mcq', 'question options correctOption type questionImage')
+        .lean(),
+      ShortFormContent.find({ chapterId }).lean(),
+    ]);
+
+    const mcqMap = new Map(mcqs.map((m) => [m._id.toString(), m]));
+    const enrichedShort = shortFormContents.map((content) => ({
+      ...content,
+      sequence: (content.sequence || []).map((seq) =>
+        seq.type === 'mcq' && seq.mcqId
+          ? { ...seq, mcq: mcqMap.get(seq.mcqId.toString()) || null }
+          : seq,
+      ),
+    }));
+
+    return res.status(200).json({
+      chapter: {
+        _id: chapter._id,
+        name: chapter.name,
+        thumbnail: chapter.thumbnail,
+        subject: chapter.subject,
+      },
+      longFormatVideos,
+      shortFormContents: enrichedShort,
+      mcqs,
+    });
+  } catch (error) {
+    console.error('Error fetching chapter content:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};

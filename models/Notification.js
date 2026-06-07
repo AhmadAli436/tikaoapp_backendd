@@ -3,11 +3,13 @@ import mongoose from 'mongoose';
 const notificationSchema = new mongoose.Schema({
   title: { type: String, required: true },
   message: { type: String, required: true },
-  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student', required: true },
+  recipientId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  recipientRole: { type: String, enum: ['student', 'teacher', 'admin'], default: 'student' },
+  type: { type: String, enum: ['announcement', 'progress', 'message', 'system', 'career'], default: 'system' },
   read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-});
+  metadata: { type: mongoose.Schema.Types.Mixed },
+}, { timestamps: true });
 
-notificationSchema.index({ studentId: 1, createdAt: -1 }); // for optimized queries
+notificationSchema.index({ recipientId: 1, createdAt: -1 });
 
 export default mongoose.model('Notification', notificationSchema);
