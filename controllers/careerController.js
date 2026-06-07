@@ -7,28 +7,71 @@ import MockTestAttempt from '../models/MockTestAttempt.js';
 import Student from '../models/Student.js';
 
 const DEFAULT_SKILLS = [
-  { name: 'Data Analysis', category: 'Technology', demandLevel: 'high', relatedSubjects: ['Mathematics', 'Statistics'], marketTrend: 'rising', growthRate: 28, salaryRange: '₹6-15 LPA' },
+  { name: 'Data Analysis', category: 'Technology', demandLevel: 'high', relatedSubjects: ['Mathematics', 'Statistics'], marketTrend: 'rising', growthRate: 28, salaryRange: 'PKR 80,000 - 200,000/month' },
   { name: 'Communication', category: 'Soft Skills', demandLevel: 'high', relatedSubjects: ['English'], marketTrend: 'stable', growthRate: 12, salaryRange: 'All roles' },
   { name: 'Problem Solving', category: 'Core', demandLevel: 'high', relatedSubjects: ['Mathematics', 'Physics'], marketTrend: 'rising', growthRate: 18, salaryRange: 'All roles' },
-  { name: 'Programming', category: 'Technology', demandLevel: 'high', relatedSubjects: ['Computer Science', 'Mathematics'], marketTrend: 'rising', growthRate: 32, salaryRange: '₹8-25 LPA' },
-  { name: 'Scientific Reasoning', category: 'STEM', demandLevel: 'medium', relatedSubjects: ['Physics', 'Chemistry', 'Biology'], marketTrend: 'stable', growthRate: 10, salaryRange: '₹5-12 LPA' },
+  { name: 'Programming', category: 'Technology', demandLevel: 'high', relatedSubjects: ['Computer Science', 'Mathematics'], marketTrend: 'rising', growthRate: 32, salaryRange: 'PKR 100,000 - 350,000/month' },
+  { name: 'Scientific Reasoning', category: 'STEM', demandLevel: 'medium', relatedSubjects: ['Physics', 'Chemistry', 'Biology'], marketTrend: 'stable', growthRate: 10, salaryRange: 'PKR 60,000 - 150,000/month' },
 ];
 
 const DEFAULT_PATHS = [
-  { title: 'Software Engineer', description: 'Build applications and systems', industry: 'Technology', requiredSkills: ['Programming', 'Problem Solving'], recommendedCourses: ['Computer Science', 'Data Structures'], difficulty: 'intermediate', industryGrowth: 25, avgSalary: '₹10-30 LPA', icon: '💻' },
-  { title: 'Data Scientist', description: 'Analyze data for insights', industry: 'Technology', requiredSkills: ['Data Analysis', 'Programming', 'Mathematics'], recommendedCourses: ['Statistics', 'Machine Learning'], difficulty: 'advanced', industryGrowth: 35, avgSalary: '₹12-35 LPA', icon: '📊' },
-  { title: 'Medical Professional', description: 'Healthcare and patient care', industry: 'Healthcare', requiredSkills: ['Scientific Reasoning', 'Communication'], recommendedCourses: ['Biology', 'Chemistry'], difficulty: 'advanced', industryGrowth: 15, avgSalary: '₹8-40 LPA', icon: '🏥' },
-  { title: 'Business Analyst', description: 'Bridge business and technology', industry: 'Business', requiredSkills: ['Data Analysis', 'Communication'], recommendedCourses: ['Economics', 'Mathematics'], difficulty: 'intermediate', industryGrowth: 20, avgSalary: '₹7-18 LPA', icon: '📈' },
-  { title: 'Content Creator', description: 'Digital media and education', industry: 'Media', requiredSkills: ['Communication', 'Creativity'], recommendedCourses: ['English', 'Arts'], difficulty: 'beginner', industryGrowth: 22, avgSalary: '₹4-15 LPA', icon: '🎬' },
+  { title: 'Software Engineer', description: 'Build applications and systems', industry: 'Technology', requiredSkills: ['Programming', 'Problem Solving'], recommendedCourses: ['Computer Science', 'Data Structures'], difficulty: 'intermediate', industryGrowth: 25, avgSalary: 'PKR 1.2M - 3.6M/year', icon: '💻' },
+  { title: 'Data Scientist', description: 'Analyze data for insights', industry: 'Technology', requiredSkills: ['Data Analysis', 'Programming', 'Mathematics'], recommendedCourses: ['Statistics', 'Machine Learning'], difficulty: 'advanced', industryGrowth: 35, avgSalary: 'PKR 1.5M - 4.5M/year', icon: '📊' },
+  { title: 'Medical Professional', description: 'Healthcare and patient care', industry: 'Healthcare', requiredSkills: ['Scientific Reasoning', 'Communication'], recommendedCourses: ['Biology', 'Chemistry'], difficulty: 'advanced', industryGrowth: 15, avgSalary: 'PKR 1M - 5M/year', icon: '🏥' },
+  { title: 'Business Analyst', description: 'Bridge business and technology', industry: 'Business', requiredSkills: ['Data Analysis', 'Communication'], recommendedCourses: ['Economics', 'Mathematics'], difficulty: 'intermediate', industryGrowth: 20, avgSalary: 'PKR 0.9M - 2.4M/year', icon: '📈' },
+  { title: 'Content Creator', description: 'Digital media and education', industry: 'Media', requiredSkills: ['Communication', 'Creativity'], recommendedCourses: ['English', 'Arts'], difficulty: 'beginner', industryGrowth: 22, avgSalary: 'PKR 0.5M - 1.8M/year', icon: '🎬' },
 ];
 
+const PATH_SALARY_PKR = Object.fromEntries(DEFAULT_PATHS.map((p) => [p.title, p.avgSalary]));
+const SKILL_SALARY_PKR = Object.fromEntries(
+  DEFAULT_SKILLS.filter((s) => s.salaryRange?.startsWith('PKR')).map((s) => [s.name, s.salaryRange]),
+);
+
+const toPkrPathSalary = (path) => ({
+  ...path,
+  avgSalary:
+    PATH_SALARY_PKR[path.title]
+    || (/(LPA|₹)/i.test(path.avgSalary || '') ? 'PKR 1M - 3M/year' : path.avgSalary),
+});
+
+const toPkrSkillSalary = (skill) => ({
+  ...skill,
+  salaryRange:
+    SKILL_SALARY_PKR[skill.name]
+    || (/(LPA|₹)/i.test(skill.salaryRange || '') ? 'PKR 80,000 - 200,000/month' : skill.salaryRange),
+});
+
 const ensureSeedData = async () => {
-  if ((await CareerSkill.countDocuments()) === 0) {
-    await CareerSkill.insertMany(DEFAULT_SKILLS);
-  }
-  if ((await CareerPath.countDocuments()) === 0) {
-    await CareerPath.insertMany(DEFAULT_PATHS);
-  }
+  await Promise.all(
+    DEFAULT_SKILLS.map((skill) =>
+      CareerSkill.findOneAndUpdate({ name: skill.name }, { $set: skill }, { upsert: true }),
+    ),
+  );
+  await Promise.all(
+    DEFAULT_PATHS.map((path) =>
+      CareerPath.findOneAndUpdate({ title: path.title }, { $set: path }, { upsert: true }),
+    ),
+  );
+
+  const legacySkills = await CareerSkill.find({ salaryRange: { $regex: /LPA|₹/i } }).lean();
+  await Promise.all(
+    legacySkills.map((skill) =>
+      CareerSkill.updateOne(
+        { _id: skill._id },
+        { $set: { salaryRange: SKILL_SALARY_PKR[skill.name] || 'PKR 80,000 - 200,000/month' } },
+      ),
+    ),
+  );
+
+  const legacyPaths = await CareerPath.find({ avgSalary: { $regex: /LPA|₹/i } }).lean();
+  await Promise.all(
+    legacyPaths.map((path) =>
+      CareerPath.updateOne(
+        { _id: path._id },
+        { $set: { avgSalary: PATH_SALARY_PKR[path.title] || 'PKR 1M - 3M/year' } },
+      ),
+    ),
+  );
 };
 
 const getMasteryLevel = (pct) => {
@@ -150,7 +193,7 @@ export const getCareerPathGuidance = async (req, res) => {
       else if (avgScore >= 55 && path.difficulty === 'intermediate') matchScore += 25;
       else if (avgScore < 55 && path.difficulty === 'beginner') matchScore += 25;
       matchScore += Math.min(path.industryGrowth / 2, 20);
-      return { ...path, matchScore: Math.min(Math.round(matchScore), 99) };
+      return toPkrPathSalary({ ...path, matchScore: Math.min(Math.round(matchScore), 99) });
     }).sort((a, b) => b.matchScore - a.matchScore);
 
     return res.status(200).json({ success: true, careerPaths: ranked.slice(0, 5) });
@@ -218,21 +261,27 @@ export const getMarketTrends = async (req, res) => {
     const skills = await CareerSkill.find({ isActive: true }).sort({ growthRate: -1 }).lean();
     const paths = await CareerPath.find({ isActive: true }).sort({ industryGrowth: -1 }).lean();
 
-    const trends = skills.map((skill) => ({
-      name: skill.name,
-      category: skill.category,
-      demandLevel: skill.demandLevel,
-      marketTrend: skill.marketTrend,
-      growthRate: skill.growthRate,
-      salaryRange: skill.salaryRange,
-    }));
+    const trends = skills.map((skill) => {
+      const normalized = toPkrSkillSalary(skill);
+      return {
+        name: normalized.name,
+        category: normalized.category,
+        demandLevel: normalized.demandLevel,
+        marketTrend: normalized.marketTrend,
+        growthRate: normalized.growthRate,
+        salaryRange: normalized.salaryRange,
+      };
+    });
 
-    const topCareers = paths.slice(0, 5).map((p) => ({
-      title: p.title,
-      industry: p.industry,
-      growth: p.industryGrowth,
-      avgSalary: p.avgSalary,
-    }));
+    const topCareers = paths.slice(0, 5).map((p) => {
+      const normalized = toPkrPathSalary(p);
+      return {
+        title: normalized.title,
+        industry: normalized.industry,
+        growth: normalized.industryGrowth,
+        avgSalary: normalized.avgSalary,
+      };
+    });
 
     return res.status(200).json({ success: true, trends, topCareers });
   } catch (error) {
@@ -243,8 +292,8 @@ export const getMarketTrends = async (req, res) => {
 // Admin CRUD
 export const getAllSkills = async (_req, res) => {
   await ensureSeedData();
-  const skills = await CareerSkill.find().sort({ createdAt: -1 });
-  res.json({ success: true, skills });
+  const skills = await CareerSkill.find().sort({ createdAt: -1 }).lean();
+  res.json({ success: true, skills: skills.map(toPkrSkillSalary) });
 };
 
 export const createSkill = async (req, res) => {
@@ -264,8 +313,8 @@ export const deleteSkill = async (req, res) => {
 
 export const getAllPaths = async (_req, res) => {
   await ensureSeedData();
-  const paths = await CareerPath.find().sort({ createdAt: -1 });
-  res.json({ success: true, paths });
+  const paths = await CareerPath.find().sort({ createdAt: -1 }).lean();
+  res.json({ success: true, paths: paths.map(toPkrPathSalary) });
 };
 
 export const createPath = async (req, res) => {

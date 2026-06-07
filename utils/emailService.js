@@ -32,6 +32,10 @@ transporter.verify((error, success) => {
  * @param {string} options.text - Email plain text content (optional)
  */
 export const sendEmail = async ({ to, subject, html, text }) => {
+  if (process.env.SEND_EMAIL === 'false') {
+    console.log(`Email sending disabled. Skipping email to ${to}`);
+    return { success: false, message: 'Email sending disabled' };
+  }
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('Email credentials not configured. Skipping email send.');
     return { success: false, message: 'Email not configured' };

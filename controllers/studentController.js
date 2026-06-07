@@ -40,6 +40,10 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendEmail = async ({ to, subject, html }) => {
+  if (process.env.SEND_EMAIL === 'false') {
+    console.log(`Email sending disabled. Skipping email to ${to}`);
+    return;
+  }
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('Email credentials not configured. Skipping email send.');
     return;
@@ -97,6 +101,30 @@ const generateUniqueStudentReferralCode = async () => {
 
   return referralCode;
 };
+const normalizeGender = (value) => {
+  if (!value) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'male' || normalized === 'm') return 'Male';
+  if (normalized === 'female' || normalized === 'f') return 'Female';
+  if (normalized === 'other') return 'Other';
+  if (['Male', 'Female', 'Other'].includes(value)) return value;
+  return undefined;
+};
+
+const normalizeParentsMobile = (value) => {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (/^\+91\d{10}$/.test(trimmed)) return trimmed;
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length === 10) return `+91${digits}`;
+  return undefined;
+};
+
+const normalizeTitle = (value) => {
+  if (value === 'Mr' || value === 'Ms') return value;
+  return undefined;
+};
+
 // Create a new student
 export const createStudent = async (req, res) => {
   try {
@@ -104,14 +132,13 @@ export const createStudent = async (req, res) => {
       userId,
       mobile,
       name,
-      gender,
-      title,
+      gender: rawGender,
+      title: rawTitle,
       fatherTitle,
       motherTitle,
       studentUid,
       state,
       pinCode,
-      parentsMobile,
       parentEmail,
       fatherName,
       motherName,
@@ -131,6 +158,13 @@ export const createStudent = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const finalMobile = mobile || user.mobile;
+    const gender = normalizeGender(rawGender);
+    const title = normalizeTitle(rawTitle);
+    const parentsMobile = normalizeParentsMobile(req.body.parentsMobile);
+
+    if (!gender) {
+      return res.status(400).json({ message: 'Gender must be Male, Female, or Other' });
+    }
 
     // ✅ Validate class and board
     const classDoc = await Class.findById(classId);
@@ -179,8 +213,6 @@ export const createStudent = async (req, res) => {
       gender,
       state,
       pinCode,
-      parentsMobile,
-      title,
       fatherTitle,
       motherTitle,
       studentUid,
@@ -199,6 +231,13 @@ export const createStudent = async (req, res) => {
       avatarUrl: avatarUrl || '',
       createdByAdmin,
     };
+
+    if (title) {
+      studentData.title = title;
+    }
+    if (parentsMobile) {
+      studentData.parentsMobile = parentsMobile;
+    }
 
     // ✅ Create or update using findOneAndUpdate
     const student = await Student.findOneAndUpdate(
@@ -319,9 +358,15 @@ const mailOptions = {
 };
 
 
-    await sendEmail(mailOptions);
-      console.log(`Email sent to ${student.parentEmail} for student UID: ${uid}`);
+    try {
+        await sendEmail(mailOptions);
+        console.log(`Email sent to ${student.parentEmail} for student UID: ${uid}`);
+      } catch (emailError) {
+        console.error('Student saved but email failed:', emailError);
+      }
     }
+
+    const userType = student.isApproved ? 'student_approved' : 'student_pending';
 
     const response = {
       _id: student._id,
@@ -339,7 +384,11 @@ const mailOptions = {
     };
 
     console.log('Created/updated student:', response);
-    res.status(201).json({ message: 'Student created/updated successfully and email sent', student: response });
+    res.status(201).json({
+      message: 'Student profile saved successfully. Your approval request is pending from the admin.',
+      student: response,
+      userType,
+    });
   } catch (error) {
     console.error('Error creating/updating student or sending email:', error);
     res.status(500).json({ message: 'Error creating/updating student or sending email', error: error.message });

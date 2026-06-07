@@ -4,6 +4,7 @@ import Teacher from '../models/Teacher.js';
 import QuizAttempt from '../models/QuizAttempt.js';
 import Points from '../models/Points.js';
 import MocktestPoints from '../models/MocktestPoints.js';
+import PointTransaction from '../models/PointTransaction.js';
 import VideoProgress from '../models/VideoProgress.js';
 import TeacherEarning from '../models/TeacherEarning.js';
 import Notification from '../models/Notification.js';
@@ -95,28 +96,78 @@ export const getTeacherDashboardStats = async (req, res) => {
 export const getGamificationStats = async (req, res) => {
   try {
     const { userId } = req.params;
-    const [points, mockPoints] = await Promise.all([
+    const [points, mockPoints, transactions] = await Promise.all([
       Points.find({ userId }).lean(),
       MocktestPoints.find({ userId }).lean(),
+      PointTransaction.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
     ]);
 
     const mcqPoints = points.reduce((s, p) => s + (p.points || 0), 0);
     const mockTestPoints = mockPoints.reduce((s, p) => s + (p.points || 0), 0);
+    const adjustedPoints = transactions.reduce((s, t) => s + t.points, 0);
+    const totalPoints = mcqPoints + mockTestPoints + adjustedPoints;
     const correctAnswers = points.filter((p) => p.isCorrect).length + mockPoints.filter((p) => p.isCorrect).length;
+    const level = Math.floor(totalPoints / 100) + 1;
+    const xpInLevel = totalPoints % 100;
 
     return res.status(200).json({
       success: true,
       gamification: {
-        totalPoints: mcqPoints + mockTestPoints,
+        totalPoints,
         mcqPoints,
         mockTestPoints,
+        adjustedPoints,
         correctAnswers,
-        level: Math.floor((mcqPoints + mockTestPoints) / 100) + 1,
+        level,
+        xpInLevel,
+        xpToNextLevel: 100 - xpInLevel,
+        recentTransactions: transactions,
         badges: [
-          ...(mcqPoints >= 50 ? [{ name: 'MCQ Master', icon: '🎯' }] : []),
-          ...(mockTestPoints >= 30 ? [{ name: 'Test Champion', icon: '🏆' }] : []),
-          ...(correctAnswers >= 20 ? [{ name: 'Sharp Mind', icon: '🧠' }] : []),
+          ...(mcqPoints >= 50 ? [{ name: 'MCQ Master', icon: '🎯', desc: '50+ MCQ points' }] : []),
+          ...(mockTestPoints >= 30 ? [{ name: 'Test Champion', icon: '🏆', desc: '30+ mock test points' }] : []),
+          ...(correctAnswers >= 20 ? [{ name: 'Sharp Mind', icon: '🧠', desc: '20+ correct answers' }] : []),
+          ...(totalPoints >= 200 ? [{ name: 'Rising Star', icon: '🌟', desc: '200+ total points' }] : []),
+          ...(level >= 5 ? [{ name: 'Level 5 Hero', icon: '⚡', desc: 'Reached level 5' }] : []),
         ],
+        milestones: [
+          { target: 100, label: 'Bronze Learner', reached: totalPoints >= 100 },
+          { target: 250, label: 'Silver Scholar', reached: totalPoints >= 250 },
+          { target: 500, label: 'Gold Genius', reached: totalPoints >= 500 },
+        ],
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getTeacherEarningsHistory = async (req, res) => {
+  try {
+    const { teacherId } = req.params;
+    if (!teacherId || !mongoose.Types.ObjectId.isValid(teacherId)) {
+      return res.status(400).json({ success: false, message: 'Invalid teacherId' });
+    }
+
+    const records = await TeacherEarning.find({ teacher: teacherId })
+      .sort({ date: -1 })
+      .limit(24)
+      .lean();
+
+    const totalEarnings = records.reduce((s, r) => s + (r.totalEarning || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      earnings: {
+        totalEarnings,
+        records: records.map((r) => ({
+          _id: r._id,
+          date: r.date,
+          totalEarning: r.totalEarning,
+          referralEarningAmount: r.referralEarningAmount || 0,
+          salesAssistAmount: r.salesAssistAmount || 0,
+          directSalesAmount: r.directSalesAmount || 0,
+          offlineDoubtClassAmount: r.offlineDoubtClassAmount || 0,
+        })),
       },
     });
   } catch (error) {
